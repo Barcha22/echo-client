@@ -32,7 +32,6 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void initState() {
-    _sendOtp();
     super.initState();
   }
 
@@ -247,10 +246,11 @@ class _RegisterPageState extends State<RegisterPage> {
     return ChatBackground(
       child: Scaffold(
         backgroundColor: AppColors.backgroundTransparent,
+
         body: SingleChildScrollView(
           child: Container(
-            height: MediaQuery.of(context).size.height - 200,
-            margin: EdgeInsets.only(top: 150),
+            height: MediaQuery.of(context).size.height - 100,
+            margin: EdgeInsets.only(top: 60),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

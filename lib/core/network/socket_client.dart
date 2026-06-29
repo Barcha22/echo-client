@@ -34,8 +34,8 @@ class SocketService {
 
     _userId = userId;
 
-    // _socket = i_o.io('http://10.0.2.2:5000', {
-    _socket = i_o.io('http://192.168.18.54:5000', {
+    _socket = i_o.io('http://10.0.2.2:5000', {
+    // _socket = i_o.io('http://192.168.18.54:5000', {
       'transports': ['websocket'],
       'autoConnect': true,
       'forceNew': true,

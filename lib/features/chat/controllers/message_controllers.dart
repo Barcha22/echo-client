@@ -23,13 +23,13 @@ class MessageController extends ChangeNotifier {
   String? _error;
   User? _currentUser;
   String _friendId = '';
-  bool _isFriend=false;
-  bool _isFriendOnline=false;
+  bool _isFriend = false;
+  bool _isFriendOnline = false;
+  bool _isPageVisible = true;
 
   bool _disposed = false;
   final List<Function> _registeredSocketCallbacks = [];
 
-  
   // Getters
   List<Message> get messages => _messages;
   String? get editingMessageId => _editingMessageId;
@@ -44,29 +44,56 @@ class MessageController extends ChangeNotifier {
   // Initialize
   void init(String friendId, BuildContext context) {
     _friendId = friendId;
+    _isPageVisible=true;
     _setupSocketListeners();
     _loadData();
     _checkFriendshipStatus();
     _fetchFriendStatus();
   }
 
+  void setPageVisibility(bool isVisible) {
+    _isPageVisible = isVisible;
+    if (!_disposed) notifyListeners();
+
+    if (isVisible) {
+      _rejoinChatRoom();
+      _markAsRead();
+    } else {
+      _leaveChatRoom();
+    }
+  }
+
   void _joinChatRoom() {
-  _socketService.joinChatRoom(_currentUser?.id  ?? '', _friendId);
+    _socketService.joinChatRoom(_currentUser?.id ?? '', _friendId);
+  }
+
+  void _rejoinChatRoom() {
+    if (_currentUser != null && _friendId.isNotEmpty) {
+      _socketService.joinChatRoom(_currentUser!.id, _friendId);
+    }
+  }
+
+  void _leaveChatRoom() {
+    if (_currentUser != null && _friendId.isNotEmpty) {
+      _socketService.leaveChatRoom(_currentUser!.id, _friendId);
+    }
   }
 
   //socket listeners setup
-  void _setupSocketListeners() {   
+  void _setupSocketListeners() {
     // Notice we assign the function to a variable now:
-    void onMessageCallback (data) {
+    void onMessageCallback(data) {
       if (data['senderId'] == _friendId || data['recieverId'] == _friendId) {
         final messageId = data['_id'] ?? '';
         final senderId = data['senderId'] ?? '';
         final receiverId = data['recieverId'] ?? _friendId;
         final content = data['content'] ?? '';
-        final sentAt = data['sentAt'] != null ? DateTime.parse(data['sentAt']) : DateTime.now();
+        final sentAt = data['sentAt'] != null
+            ? DateTime.parse(data['sentAt'])
+            : DateTime.now();
         final isDelivered = data['isDelivered'] ?? false;
 
-        final isRead = (senderId == _friendId); 
+        final isRead = (senderId == _friendId) && _isPageVisible;
 
         final existingIndex = _messages.indexWhere((m) => m.id == messageId);
 
@@ -76,17 +103,17 @@ class MessageController extends ChangeNotifier {
             isRead: isRead,
           );
         } else {
-          int? tempIndex = _messages.indexWhere((m) => 
-            m.id.startsWith('1') && 
-            m.senderId == senderId &&
-            m.content == content &&
-            m.recieverId == receiverId
+          int? tempIndex = _messages.indexWhere(
+            (m) =>
+                m.id.startsWith('1') &&
+                m.senderId == senderId &&
+                m.content == content &&
+                m.recieverId == receiverId,
           );
 
           if (tempIndex == -1) {
-            tempIndex = _messages.indexWhere((m) => 
-              m.id.startsWith('1') && 
-              m.senderId == senderId
+            tempIndex = _messages.indexWhere(
+              (m) => m.id.startsWith('1') && m.senderId == senderId,
             );
           }
 
@@ -113,46 +140,48 @@ class MessageController extends ChangeNotifier {
             _messages.insert(0, newMessage);
           }
         }
-         if (senderId == _friendId) {
-          _messageService.markAsRead(_friendId); 
+        if (senderId == _friendId && _isPageVisible) {
+          _messageService.markAsRead(_friendId);
         }
         if (!_disposed) notifyListeners();
       }
     }
+
     // Register it
     _socketService.onMessageReceived(onMessageCallback);
     // Track it so we can kill it later
     _registeredSocketCallbacks.add(onMessageCallback);
 
-
-    void onTypingCallback (data) {      
-        if (data['userId'] == _friendId) {
-          var raw =  data['isTyping'] ?? false;
-          if(raw == false){
-            _isTyping = false;
-          }else{
-            _isTyping = true;
-          }
-        if(!_disposed) notifyListeners();
+    void onTypingCallback(data) {
+      if (data['userId'] == _friendId) {
+        var raw = data['isTyping'] ?? false;
+        if (raw == false) {
+          _isTyping = false;
+        } else {
+          _isTyping = true;
         }
+        if (!_disposed) notifyListeners();
+      }
     }
+
     _socketService.onTyping(onTypingCallback);
     _registeredSocketCallbacks.add(onTypingCallback);
 
-    void onReadCallback (data) {
+    void onReadCallback(data) {
       if (data['readerId'] == _friendId) {
         for (var message in _messages) {
           if (message.senderId == _currentUser?.id && !message.isRead) {
             message.isRead = true;
           }
         }
-        if(!_disposed) notifyListeners();
+        if (!_disposed) notifyListeners();
       }
     }
+
     _socketService.onMessageReadReceipt(onReadCallback);
     _registeredSocketCallbacks.add(onReadCallback);
 
-    void onEditedCallback (data) {
+    void onEditedCallback(data) {
       final idx = _messages.indexWhere((m) => m.id == data['messageId']);
       if (idx != -1) {
         _messages[idx] = Message(
@@ -163,50 +192,55 @@ class MessageController extends ChangeNotifier {
           sentAt: _messages[idx].sentAt,
           isRead: _messages[idx].isRead,
         );
-        if(!_disposed) notifyListeners();
+        if (!_disposed) notifyListeners();
       }
     }
+
     _socketService.onMessageEdited(onEditedCallback);
     _registeredSocketCallbacks.add(onEditedCallback);
 
-    void onDeletedCallback (data) {
+    void onDeletedCallback(data) {
       _messages.removeWhere((m) => m.id == data['messageId']);
-      if(!_disposed) notifyListeners();
+      if (!_disposed) notifyListeners();
     }
+
     _socketService.onMessageDeleted(onDeletedCallback);
     _registeredSocketCallbacks.add(onDeletedCallback);
 
-    void onReactedCallback (data) {
+    void onReactedCallback(data) {
       final idx = _messages.indexWhere((m) => m.id == data['messageId']);
       if (idx != -1) {
         _messages[idx].reactions = data['reactions'] != null
             ? Map<String, dynamic>.from(data['reactions'])
             : null;
-        if(!_disposed) notifyListeners();
+        if (!_disposed) notifyListeners();
       }
     }
+
     _socketService.onMessageReacted(onReactedCallback);
     _registeredSocketCallbacks.add(onReactedCallback);
-  
-    void onOnlineCallback (userId) {
+
+    void onOnlineCallback(userId) {
       if (userId == _friendId) {
         _isFriendOnline = true;
         if (!_disposed) notifyListeners();
       }
     }
+
     _socketService.onUserOnline(onOnlineCallback);
     _registeredSocketCallbacks.add(onOnlineCallback);
 
-    void onOfflineCallback (userId) {
+    void onOfflineCallback(userId) {
       if (userId == _friendId) {
         _isFriendOnline = false;
-        if(!_disposed) notifyListeners();
+        if (!_disposed) notifyListeners();
       }
     }
+
     _socketService.onUserOffline(onOfflineCallback);
     _registeredSocketCallbacks.add(onOfflineCallback);
-  
-    void onDeliveredCallback (data){
+
+    void onDeliveredCallback(data) {
       final messageIds = data['messageIds'] as List;
       for (var msgId in messageIds) {
         final idx = _messages.indexWhere((m) => m.id == msgId);
@@ -214,8 +248,9 @@ class MessageController extends ChangeNotifier {
           _messages[idx] = _messages[idx].copyWith(isDelivered: true);
         }
       }
-      if(!_disposed) notifyListeners();
+      if (!_disposed) notifyListeners();
     }
+
     _socketService.onMessageDelivered(onDeliveredCallback);
     _registeredSocketCallbacks.add(onDeliveredCallback);
   }
@@ -243,11 +278,11 @@ class MessageController extends ChangeNotifier {
   Future<void> refreshMessages() async {
     await _fetchMessages();
   }
- 
+
   Future<void> _loadData() async {
     await _fetchCurrentUser();
     await _fetchMessages();
-    await _markAsRead();
+    // await _markAsRead();
     _joinChatRoom();
   }
 
@@ -255,11 +290,11 @@ class MessageController extends ChangeNotifier {
     try {
       final response = await _profileService.getProfile();
       if (response.isSuccess) {
-        _currentUser = _profileService.parseUser(response);  
+        _currentUser = _profileService.parseUser(response);
         notifyListeners();
       }
     } catch (e) {
-      // 
+      //
     }
   }
 
@@ -288,11 +323,11 @@ class MessageController extends ChangeNotifier {
 
   Future<void> _markAsRead() async {
     try {
-        await _messageService.markAsRead(_friendId);
+      await _messageService.markAsRead(_friendId);
     } catch (e) {
-      // 
+      //
     }
-}
+  }
 
   // =====================Public methods for UI to call=======================/
 
@@ -359,11 +394,7 @@ class MessageController extends ChangeNotifier {
   }
 
   void sendTyping(bool text) {
-    _socketService.sendTyping(
-      _currentUser?.id ?? '',
-      _friendId,
-      text,
-    );
+    _socketService.sendTyping(_currentUser?.id ?? '', _friendId, text);
   }
 
   void startEditing(Message message) {
@@ -376,7 +407,11 @@ class MessageController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> submitEdit(Message message, String newContent, BuildContext context) async {
+  Future<void> submitEdit(
+    Message message,
+    String newContent,
+    BuildContext context,
+  ) async {
     if (newContent.isEmpty) return;
     try {
       final res = await _messageService.editMessage(
@@ -398,10 +433,9 @@ class MessageController extends ChangeNotifier {
           );
           notifyListeners();
         }
-      } else {
-      }
+      } else {}
     } catch (e) {
-      // 
+      //
     }
   }
 
@@ -413,74 +447,71 @@ class MessageController extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      // 
+      //
     }
   }
 
- Future<void> reactToMessage(Message message, String emoji) async {
+  Future<void> reactToMessage(Message message, String emoji) async {
     try {
-        final userId = _currentUser?.id ?? '';
-        if (userId.isEmpty) return;
+      final userId = _currentUser?.id ?? '';
+      if (userId.isEmpty) return;
 
-        // Clone the reactions map
-        final Map<String, dynamic> reactions = Map.from(message.reactions ?? {});
+      // Clone the reactions map
+      final Map<String, dynamic> reactions = Map.from(message.reactions ?? {});
 
-        // 1. Get the list for the target emoji (safe copy)
-        final targetList = reactions[emoji] as List? ?? [];
-        final alreadyReacted = targetList.contains(userId);
+      // 1. Get the list for the target emoji (safe copy)
+      final targetList = reactions[emoji] as List? ?? [];
+      final alreadyReacted = targetList.contains(userId);
 
-        if (alreadyReacted) {
-            // Toggle off: remove user from this emoji
-            targetList.remove(userId);
-            if (targetList.isEmpty) {
-                reactions.remove(emoji);
-            } else {
-                reactions[emoji] = targetList;
-            }
+      if (alreadyReacted) {
+        // Toggle off: remove user from this emoji
+        targetList.remove(userId);
+        if (targetList.isEmpty) {
+          reactions.remove(emoji);
         } else {
-            // Remove user from ALL other reactions (safe iteration)
-            final keysToRemove = <String>[];
-            reactions.forEach((key, list) {
-                if (key != emoji && list is List && list.contains(userId)) {
-                    list.remove(userId);
-                    if (list.isEmpty) {
-                        keysToRemove.add(key);
-                    }
-                }
-            });
-            // Remove empty keys after iteration
-            for (var key in keysToRemove) {
-                reactions.remove(key);
+          reactions[emoji] = targetList;
+        }
+      } else {
+        // Remove user from ALL other reactions (safe iteration)
+        final keysToRemove = <String>[];
+        reactions.forEach((key, list) {
+          if (key != emoji && list is List && list.contains(userId)) {
+            list.remove(userId);
+            if (list.isEmpty) {
+              keysToRemove.add(key);
             }
-
-            // Add user to the new emoji
-            if (!reactions.containsKey(emoji)) {
-                reactions[emoji] = [];
-            }
-            (reactions[emoji] as List).add(userId);
+          }
+        });
+        // Remove empty keys after iteration
+        for (var key in keysToRemove) {
+          reactions.remove(key);
         }
 
-        // Update local message
-        final idx = _messages.indexWhere((m) => m.id == message.id);
-        if (idx != -1) {
-            _messages[idx] = message.copyWith(reactions: reactions);
-            notifyListeners();
+        // Add user to the new emoji
+        if (!reactions.containsKey(emoji)) {
+          reactions[emoji] = [];
         }
+        (reactions[emoji] as List).add(userId);
+      }
 
-        // Send to server
-        await _messageService.reactToMessage(
-            messageId: message.id,
-            emoji: emoji,
-        );
+      // Update local message
+      final idx = _messages.indexWhere((m) => m.id == message.id);
+      if (idx != -1) {
+        _messages[idx] = message.copyWith(reactions: reactions);
+        notifyListeners();
+      }
+
+      // Send to server
+      await _messageService.reactToMessage(messageId: message.id, emoji: emoji);
     } catch (e) {
-        // 
+      //
     }
-}
+  }
 
   Future<void> silentRefresh() async {
-  try {
-    final response = await _messageService.getChatHistory(_friendId);
-    if (response.isSuccess) {
+    try {
+      final response = await _messageService.getChatHistory(_friendId);
+      if (response.isSuccess) {
         _messages = _messageService.parseMessages(response);
         notifyListeners();
       }
@@ -510,8 +541,9 @@ class MessageController extends ChangeNotifier {
       _socketService.onMessageDeliveredCallbacks.remove(callback);
     }
     _registeredSocketCallbacks.clear();
-    _socketService.leaveChatRoom(_currentUser?.id ?? '', _friendId);
-    _disposed=true;
+    // _socketService.leaveChatRoom(_currentUser?.id ?? '', _friendId);
+    _leaveChatRoom();
+    _disposed = true;
     super.dispose();
   }
 }

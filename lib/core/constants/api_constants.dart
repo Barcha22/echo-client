@@ -3,10 +3,10 @@ class ApiConstants {
   // static const String baseUrl = 'http://localhost:5000/api';
 
   // Android emulator
-  // static const String baseUrl = 'http://10.0.2.2:5000/api';
+  static const String baseUrl = 'http://10.0.2.2:5000/api';
   
   // physical device 
-  static const String baseUrl = 'http://192.168.18.54:5000/api';
+  // static const String baseUrl = 'http://192.168.18.54:5000/api';
 
   /* Auth endpoints */
   static const String signin = '$baseUrl/auth/signin';
