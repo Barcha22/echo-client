@@ -41,7 +41,7 @@ dependencies:
   image_picker: ^1.2.2 #picking image
   socket_io_client: ^3.1.6 #socket to connect to server 
   get_it: ^9.2.1 #for dependency injections
-  package_info_plus: ^10.1.0 #idk
+  package_info_plus: ^10.2.0 #idk
   mime: ^1.0.4 #to extract type of a file fromlocal storage
   firebase_core: ^4.11.0 #for notifications
   firebase_messaging: ^16.4.1 #for notifications

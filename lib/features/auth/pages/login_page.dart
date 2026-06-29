@@ -242,7 +242,7 @@ class _LoginPageState extends State<LoginPage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton(
-                            onPressed: () => AppNavigator.pushReplacement(AppRoutes.forgotPassword),
+                            onPressed: () => AppNavigator.push(AppRoutes.forgotPassword),
                             child: Text(
                               'Forgot Password?',
                               style: TextStyle(color: Colors.grey),

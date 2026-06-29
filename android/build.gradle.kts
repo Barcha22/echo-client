@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget  
+
 buildscript {
     repositories {
         google()
@@ -5,6 +7,11 @@ buildscript {
     }
     dependencies {
         classpath("com.google.gms:google-services:4.4.2") 
+    }
+}
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
     }
 }
 allprojects {

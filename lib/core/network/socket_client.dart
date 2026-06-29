@@ -34,8 +34,8 @@ class SocketService {
 
     _userId = userId;
 
-    _socket = i_o.io('http://10.0.2.2:5000', {
-    // _socket = i_o.io('http://192.168.0.137:5000', {
+    // _socket = i_o.io('http://10.0.2.2:5000', {
+    _socket = i_o.io('http://192.168.18.54:5000', {
       'transports': ['websocket'],
       'autoConnect': true,
       'forceNew': true,
@@ -48,7 +48,7 @@ class SocketService {
     _socket?.onConnect((_) {
       debugPrint('🔌 Socket Connected');
       _isConnected = true;
-      _socket?.emit('user:join', {'userId': _userId}); // Safe to use _userId here
+      _socket?.emit('user:join', {'userId': _userId});
     });
 
     _socket?.onConnectError((error) {
