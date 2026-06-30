@@ -100,7 +100,7 @@ class SocketService {
     }
   }
 
-  // --- SOCKET EMITTERS  ---
+  // ============================= SOCKET EMITTERS (client->server)  =================================
   void joinChatRoom(String senderId, String receiverId) {
     if (!_isConnected) return;
     _socket?.emit('message:join', { 
@@ -136,7 +136,7 @@ class SocketService {
     }
   }
 
-  // --- SOCKET LISTENERS ---
+  // =============================== SOCKET LISTENERS (server-client) ================================
 
   void listenToUserStatus() {
     _socket?.on('user:online', (data) {
@@ -236,8 +236,10 @@ class SocketService {
     });
   }
 
-  // --- CALLBACK SETTERS
-
+  // =============================== CALLBACK SETTERS ==========================================
+  //call backs are used here cuz they trigger on a specific event's occurence, so when certain things are either sent to 
+  // web sockets server or received from server via sockets these callbacks will be called
+  
   void onUserOnline(void Function(String userId) callback) {
     onUserOnlineCallbacks.add(callback);
   }

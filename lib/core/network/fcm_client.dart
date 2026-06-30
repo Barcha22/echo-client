@@ -117,13 +117,10 @@ class FcmService {
 
   @pragma('vm:entry-point')
   static Future<void> _handleBackgroundMessage(RemoteMessage message) async {
-    // debugPrint('🟣 Background message: ${message.notification?.title}');
     // System handles the notification automatically
   }
 
-  void _handleMessageOpenedApp(RemoteMessage message) {
-    // debugPrint('🟣 App opened from notification: ${message.notification?.title}');
-    
+  void _handleMessageOpenedApp(RemoteMessage message) {    
     final String type = message.data['type'] ?? '';
     final String? senderId = message.data['senderId'];
     final String? senderName = message.data['senderName'];
@@ -134,7 +131,7 @@ class FcmService {
     } else if (type == 'friend_request') {
       _navigateToPendingRequests();
     } else if (type == 'friend_accepted') {
-      // Navigate to Friends list or Home
+      // 
       _navigateToHome();
     }
   }

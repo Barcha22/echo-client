@@ -6,7 +6,7 @@ import '../constants/api_constants.dart';
 import 'api_response.dart';
 
 class ApiService {
-  /* Singleton pattern - only one instance->._internal() */
+  /* Singleton pattern - only one instance->using ._internal() */
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
@@ -55,7 +55,6 @@ class ApiService {
       return 'Failed to extract user id';
     }
   }
-
 
   /*================= HTTPS METHODS =============*/
   // Get request
