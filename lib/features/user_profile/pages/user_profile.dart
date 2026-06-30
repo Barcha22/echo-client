@@ -68,7 +68,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (mounted && response.isSuccess) {
         setState(() {
           _user = _profileService.parseUser(response);
-          _isLiveOnline = _user?.isOnline ?? false; // Initialize live status with fetched data
+          _isLiveOnline = _user?.isOnline ?? false; 
           _isLoading = false;
         });
       } else {
@@ -79,7 +79,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  // ADD THIS: Clean up to prevent memory leaks!
   @override
   void dispose() {
     _socketService.onUserOnlineCallbacks.remove(_onlineCallback);
