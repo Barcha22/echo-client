@@ -550,7 +550,7 @@ class MessageController extends ChangeNotifier {
   Future<void> _playReceiveAudio() async {
     try {
       await audioPlayer.stop();
-      await audioPlayer.play(AssetSource('send-sound/send.mp3'));
+      await audioPlayer.play(AssetSource('send-sound/received.mp3'));
     } catch (e) {
       debugPrint('ERROR playing receive sound: $e');
     }
