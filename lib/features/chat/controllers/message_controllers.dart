@@ -101,7 +101,9 @@ class MessageController extends ChangeNotifier {
         final isDelivered = data['isDelivered'] ?? false;
 
         final isRead = (senderId == _friendId) && _isPageVisible;
-
+        if (senderId == _friendId) {
+          _playReceiveAudio();
+        }
         final existingIndex = _messages.indexWhere((m) => m.id == messageId);
 
         if (existingIndex != -1) {
@@ -545,11 +547,20 @@ class MessageController extends ChangeNotifier {
     }
   }
 
+  Future<void> _playReceiveAudio() async {
+    try {
+      await audioPlayer.stop();
+      await audioPlayer.play(AssetSource('send-sound/send.mp3'));
+    } catch (e) {
+      debugPrint('ERROR playing receive sound: $e');
+    }
+  }
+
   @override
   void dispose() {
     _audioPlayer?.stop();
     _audioPlayer?.dispose();
-    _audioPlayer=null;
+    _audioPlayer = null;
     for (var callback in _registeredSocketCallbacks) {
       _socketService.onMessageReceivedCallbacks.remove(callback);
       _socketService.onTypingCallbacks.remove(callback);
