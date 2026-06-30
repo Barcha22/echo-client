@@ -6,17 +6,6 @@ import '../../../core/network/api_client.dart';
 class AuthService {
   final ApiService _api = ApiService();
 
-  //FCM Token for push notifications
-  Future<ApiResponse> saveFcmToken(String fcmToken) async {
-    if (fcmToken.isEmpty) {
-      return ApiResponse(status: 400, result: 'FCM token cannot be empty');
-    }
-    return await _api.post(
-      ApiConstants.saveFcmToken,
-      body: {'fcmToken': fcmToken},
-    );
-  }
-
   /* ============================ EMAIL VERIFICATION ============================ */
   // Send verification otp
   Future<ApiResponse> sendEmailVerificationOtp({required String email}) async {
@@ -62,6 +51,8 @@ class AuthService {
     }
     return null;
   }
+
+
 
   /* ============================ PASSWORD RESET ============================ */
   // Forgot Password - Send reset OTP
@@ -118,7 +109,10 @@ class AuthService {
     return await _api.post(ApiConstants.resendResetOtp, body: {'email': email});
   }
 
-  /* =============================SIGNIN AND SIGNUP AND LOGOUT ====================== */
+
+
+
+  /* =============================SIGNIN AND SIGNUP AND LOGOUT AND FCM TOKEN SAVING====================== */
   // signup
   Future<ApiResponse> signup({
     required String email,
@@ -178,7 +172,20 @@ class AuthService {
     await _api.clearToken();
   }
 
-  /* ========================================OTHERS======================================== */
+  //FCM Token for push notifications
+  Future<ApiResponse> saveFcmToken(String fcmToken) async {
+    if (fcmToken.isEmpty) {
+      return ApiResponse(status: 400, result: 'FCM token cannot be empty');
+    }
+    return await _api.post(
+      ApiConstants.saveFcmToken,
+      body: {'fcmToken': fcmToken},
+    );
+  }
+
+
+
+  /* ======================================== HELPERS ======================================== */
   // check if user is logged in
   Future<bool> isLoggedIn() async {
     final token = await _api.getToken();
