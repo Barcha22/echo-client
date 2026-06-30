@@ -7,6 +7,7 @@ import 'package:glint/features/chat/repositories/message_service.dart';
 import 'package:glint/features/friends/repositories/friend_service.dart';
 
 class HomeController extends ChangeNotifier {
+  //Everytime anything changes state in a class which extends changeNotifier, the whole class runs again
   final _messageService = locator<MessageService>();
   final _socketService = locator<SocketService>();
   final _apiService = locator<ApiService>();
@@ -17,20 +18,21 @@ class HomeController extends ChangeNotifier {
 
   bool _isLoading = true;
   bool get isLoading => _isLoading;
-  
+
   String? _error;
   String? get error => _error;
 
-  int _pendingCount=0;
+  int _pendingCount = 0;
   int get pendingCount => _pendingCount;
 
   bool _hasUnreadMessages = false;
-  bool get hasUnreadMessages=>_hasUnreadMessages;
+  bool get hasUnreadMessages => _hasUnreadMessages;
 
   bool _hasPendingRequests = false;
   bool get hasPendingRequests => _hasPendingRequests;
 
-  void init() async{
+  // init
+  void init() async {
     _fetchRecentMessages();
     _initSocket();
     _fetchPendingCount();
@@ -41,7 +43,6 @@ class HomeController extends ChangeNotifier {
 
   // socket initialization
   Future<void> _initSocket() async {
-    
     final token = await _apiService.getToken();
     final userId = _apiService.getUserIdFromToken();
 
@@ -49,12 +50,13 @@ class HomeController extends ChangeNotifier {
       _socketService.connect(userId, token);
       _socketService.onMessageReceived(_handleNewMessage);
       _socketService.onUserOnline((userId) => _updateUserStatus(userId, true));
-      _socketService.onUserOffline((userId) => _updateUserStatus(userId, false));
-      _socketService.onChatRefreshRequired(() { 
-      silentRefreshMessages(); // Refresh the list seamlessly in the background
-    });
+      _socketService.onUserOffline(
+        (userId) => _updateUserStatus(userId, false),
+      );
+      _socketService.onChatRefreshRequired(() {
+        silentRefreshMessages(); // Refresh the list seamlessly in the background
+      });
       _socketService.onMessageEdited((data) {
-
         final messageId = data['messageId'];
         final newContent = data['content'];
 
@@ -82,6 +84,7 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  // checking if user has unread messages pending
   Future<void> _fetchUnreadStatus() async {
     try {
       final response = await _messageService.getUnreadCount();
@@ -94,6 +97,7 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  //cheking if user has any pending friend requests
   Future<void> _fetchPendingStatus() async {
     try {
       final response = await _friendService.getPendingRequests();
@@ -107,40 +111,22 @@ class HomeController extends ChangeNotifier {
     }
   }
 
-  void clearUnreadDot() {
-    _hasUnreadMessages = false;
-    notifyListeners();
-  }
-
-  void clearPendingDot() {
-    _hasPendingRequests = false;
-    notifyListeners();
-  }
-
-  Future<void> refreshUnreadStatus() async {
-    await _fetchUnreadStatus();
-  }
-
-  Future<void> refreshPendingStatus() async {
-    await _fetchPendingStatus();
-  }
-
   // fetching pending requests count
   Future<void> _fetchPendingCount() async {
-  try {
-    final response = await _friendService.getPendingRequests();    
-    if (response.isSuccess) {
-      final users = _friendService.parseFriends(response);
-      _pendingCount = users.length;
-      _hasPendingRequests = users.isNotEmpty;
-    } else {
+    try {
+      final response = await _friendService.getPendingRequests();
+      if (response.isSuccess) {
+        final users = _friendService.parseFriends(response);
+        _pendingCount = users.length;
+        _hasPendingRequests = users.isNotEmpty;
+      } else {
+        _pendingCount = 0;
+      }
+    } catch (e) {
       _pendingCount = 0;
     }
-  } catch (e) {
-    _pendingCount = 0;
+    notifyListeners();
   }
-  notifyListeners();
-}
 
   //handling new messages
   void _handleNewMessage(Map<String, dynamic> data) {
@@ -151,8 +137,7 @@ class HomeController extends ChangeNotifier {
     }
     final receiverId = data['recieverId'] ?? '';
     final friendId = (senderId == currentUserId) ? receiverId : senderId;
-  
-    
+
     final updatedLastMessage = Message(
       id: data['_id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
       senderId: senderId,
@@ -162,16 +147,20 @@ class HomeController extends ChangeNotifier {
       isRead: false,
     );
 
-  
-    final senderName = data['senderUserName'] ?? data['senderName'] ?? 'Unknown';
+    final senderName =
+        data['senderUserName'] ?? data['senderName'] ?? 'Unknown';
     final fullName = data['senderFullName'] ?? data['senderName'] ?? senderName;
-  
-    final existingIndex = _recentChats.indexWhere((chat) => chat.friendId == friendId);
-  
+
+    final existingIndex = _recentChats.indexWhere(
+      (chat) => chat.friendId == friendId,
+    );
+
     if (existingIndex != -1) {
       final existing = _recentChats[existingIndex];
-      int newUnreadCount = (senderId == currentUserId) ? 0 : existing.unreadCount + 1;
-      
+      int newUnreadCount = (senderId == currentUserId)
+          ? 0
+          : existing.unreadCount + 1;
+
       _recentChats[existingIndex] = RecentChat(
         friendId: existing.friendId,
         friendUserName: existing.friendUserName,
@@ -183,17 +172,21 @@ class HomeController extends ChangeNotifier {
       );
     } else {
       int initialUnreadCount = (senderId == currentUserId) ? 0 : 1;
-      _recentChats.add(RecentChat(
-        friendId: friendId,
-        friendUserName: senderName,
-        friendName: fullName,
-        friendPhoto: null,
-        friendOnline: false,
-        lastMessage: updatedLastMessage,
-        unreadCount: initialUnreadCount,
-      ));
+      _recentChats.add(
+        RecentChat(
+          friendId: friendId,
+          friendUserName: senderName,
+          friendName: fullName,
+          friendPhoto: null,
+          friendOnline: false,
+          lastMessage: updatedLastMessage,
+          unreadCount: initialUnreadCount,
+        ),
+      );
     }
-    _recentChats.sort((a, b) => b.lastMessage.sentAt.compareTo(a.lastMessage.sentAt));
+    _recentChats.sort(
+      (a, b) => b.lastMessage.sentAt.compareTo(a.lastMessage.sentAt),
+    );
     _fetchUnreadStatus();
     notifyListeners();
   }
@@ -246,10 +239,10 @@ class HomeController extends ChangeNotifier {
   }
 
   // checking if user is friends with with a user
-  Future<bool> isFriend(String friendId)async{
+  Future<bool> isFriend(String friendId) async {
     return await _friendService.isFriend(friendId);
   }
-  
+
   /* ====================================== Refreshers =====================================*/
   Future<void> refreshFriendCache() async {
     await _friendService.refreshFriendsCache();
@@ -262,7 +255,7 @@ class HomeController extends ChangeNotifier {
   Future<void> refreshMessages() async {
     await _fetchRecentMessages();
   }
-  
+
   Future<void> silentRefreshMessages() async {
     try {
       final response = await _messageService.getRecentMessages();
@@ -274,12 +267,29 @@ class HomeController extends ChangeNotifier {
       // ignore
     }
   }
-  
-  
+
+  Future<void> refreshUnreadStatus() async {
+    await _fetchUnreadStatus();
+  }
+
+  Future<void> refreshPendingStatus() async {
+    await _fetchPendingStatus();
+  }
+
+  // ===================HELPER METHODS==========================
+  void clearUnreadDot() {
+    _hasUnreadMessages = false;
+    notifyListeners();
+  }
+
+  void clearPendingDot() {
+    _hasPendingRequests = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _socketService.disconnect();
     super.dispose();
   }
-
 }

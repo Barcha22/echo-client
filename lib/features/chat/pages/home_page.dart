@@ -21,6 +21,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   late HomeController _controller;
   int _currentIndex = 0;
+
   final List<String> _titles = [
     "Chats",
     "My Friends",
@@ -37,8 +38,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
+
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies() { //checks for if aanything like theme, media query or state providers has changed or not, if yes then it runs
     super.didChangeDependencies();
     _controller.refreshMessages();
   }
@@ -54,7 +56,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return ChatBackground(
       child: Scaffold(
-        
         backgroundColor: Colors.transparent,
 
         appBar: AppBar(
@@ -147,10 +148,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     );
   }
 
+  // ======================= HELPER METHODS AND WIDGETS============================
   Widget _getBody(int index) {
     switch (index) {
       case 0:
-        if(_controller.hasUnreadMessages){
+        if (_controller.hasUnreadMessages) {
           _controller.clearUnreadDot();
         }
         return ChatList(

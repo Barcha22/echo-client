@@ -58,6 +58,7 @@ class MessageController extends ChangeNotifier {
     _fetchFriendStatus();
   }
 
+  // To track if user has chat message open, closed, or minimized to set sockets accordingly
   void setPageVisibility(bool isVisible) {
     _isPageVisible = isVisible;
     if (!_disposed) notifyListeners();
@@ -264,6 +265,7 @@ class MessageController extends ChangeNotifier {
     _registeredSocketCallbacks.add(onDeliveredCallback);
   }
 
+ // =====================Public methods for UI to call=======================/
   Future<void> _fetchFriendStatus() async {
     try {
       final response = await _profileService.getUserById(_friendId);
@@ -337,8 +339,6 @@ class MessageController extends ChangeNotifier {
       //
     }
   }
-
-  // =====================Public methods for UI to call=======================/
 
   Future<void> refreshFriendshipStatus() async {
     await _friendService.refreshFriendsCache();
@@ -538,7 +538,6 @@ class MessageController extends ChangeNotifier {
     });
   }
 
-  // =============== Helpers ==============================//
   Future<void> _playSendAudio() async {
     try {
       await audioPlayer.play(AssetSource('send-sound/send.mp3'));

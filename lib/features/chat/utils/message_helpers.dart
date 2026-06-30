@@ -1,5 +1,5 @@
-
 class ChatHelpers {
+
   static String formatTime(DateTime time) {
     final now = DateTime.now();
     final difference = now.difference(time);
@@ -13,4 +13,5 @@ class ChatHelpers {
       return 'Just now';
     }
   }
+
 }

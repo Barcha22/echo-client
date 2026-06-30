@@ -6,6 +6,7 @@ import '../models/message.dart';
 class MessageService {
   final ApiService _api = ApiService();
 
+// ===============================CORE SERVICES====================================
   // Send a message
   Future<ApiResponse> sendMessage({
     required String recieverId,
@@ -121,7 +122,8 @@ class MessageService {
     );
   }
 
-  // ============= HELPER METHODS =============
+
+  // ================================== HELPER METHODS ==================================
   // parse recent chats from API response
   List<RecentChat> parseRecentChats(ApiResponse response) {
     if (response.isSuccess && response.data != null) {
