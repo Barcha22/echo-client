@@ -6,6 +6,7 @@ import '../../profile/repositories/profile_service.dart';
 import 'package:glint/core/network/socket_client.dart';
 import '../models/message.dart';
 import '../../auth/models/user.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class MessageController extends ChangeNotifier {
   // Dependencies
@@ -13,6 +14,12 @@ class MessageController extends ChangeNotifier {
   final _profileService = locator<ProfileService>();
   final _socketService = locator<SocketService>();
   final _friendService = locator<FriendService>();
+
+  AudioPlayer? _audioPlayer;
+  AudioPlayer get audioPlayer {
+    _audioPlayer ??= AudioPlayer();
+    return _audioPlayer!;
+  }
 
   // State
   List<Message> _messages = [];
@@ -44,7 +51,7 @@ class MessageController extends ChangeNotifier {
   // Initialize
   void init(String friendId, BuildContext context) {
     _friendId = friendId;
-    _isPageVisible=true;
+    _isPageVisible = true;
     _setupSocketListeners();
     _loadData();
     _checkFriendshipStatus();
@@ -282,7 +289,7 @@ class MessageController extends ChangeNotifier {
   Future<void> _loadData() async {
     await _fetchCurrentUser();
     await _fetchMessages();
-    // await _markAsRead();
+    await _markAsRead();
     _joinChatRoom();
   }
 
@@ -340,6 +347,7 @@ class MessageController extends ChangeNotifier {
   Future<void> sendMessage(String content, BuildContext context) async {
     if (content.isEmpty || _isSending) return;
     final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+
     final tempMessage = Message(
       id: tempId,
       senderId: _currentUser?.id ?? '',
@@ -380,6 +388,7 @@ class MessageController extends ChangeNotifier {
             notifyListeners();
           }
         }
+        _playSendAudio();
       } else {
         _messages.removeWhere((m) => m.id == tempId);
         notifyListeners();
@@ -527,8 +536,20 @@ class MessageController extends ChangeNotifier {
     });
   }
 
+  // =============== Helpers ==============================//
+  Future<void> _playSendAudio() async {
+    try {
+      await audioPlayer.play(AssetSource('send-sound/send.mp3'));
+    } catch (e) {
+      debugPrint('ERROR : $e');
+    }
+  }
+
   @override
   void dispose() {
+    _audioPlayer?.stop();
+    _audioPlayer?.dispose();
+    _audioPlayer=null;
     for (var callback in _registeredSocketCallbacks) {
       _socketService.onMessageReceivedCallbacks.remove(callback);
       _socketService.onTypingCallbacks.remove(callback);

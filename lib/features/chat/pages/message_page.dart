@@ -61,7 +61,7 @@ class _MessagePageState extends State<MessagePage> with WidgetsBindingObserver {
     );
   }
 
-  void _sendMessage() {
+  void _sendMessage()async {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
     _controller.sendMessage(content, context);
